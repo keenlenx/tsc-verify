@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Employee Verification",
+  "short_name": "Verify Staff",
+  "description": "Verify employee identity against current staff records.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f2f5f1",
+  "theme_color": "#23664d",
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

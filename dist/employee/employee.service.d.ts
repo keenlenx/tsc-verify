@@ -24,4 +24,5 @@ export declare class EmployeeService implements OnModuleInit {
     private loadEmployees;
     private refreshEmployeesIfChanged;
     private prepareAuditLog;
+    private formatEatTimestamp;
 }

@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { createReadStream } from 'node:fs';
-import { appendFile, mkdir, stat } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import csv = require('csv-parser');
 
@@ -41,7 +41,7 @@ export class EmployeeService implements OnModuleInit {
     try {
       await appendFile(
         this.auditPath,
-        `${new Date().toISOString()},${idNumber},${result}\n`,
+        `${this.formatEatTimestamp(new Date())},${idNumber},${result}\n`,
         'utf8',
       );
     } catch (error) {
@@ -112,5 +112,41 @@ export class EmployeeService implements OnModuleInit {
         throw error;
       }
     }
+
+    const contents = await readFile(this.auditPath, 'utf8');
+    const lineEnding = contents.includes('\r\n') ? '\r\n' : '\n';
+    const lines = contents.split(/\r?\n/);
+    let normalized = false;
+
+    if (lines[0] === 'gitimestamp,idNumber,result') {
+      lines[0] = 'timestamp,idNumber,result';
+      normalized = true;
+    }
+
+    for (let index = 1; index < lines.length; index += 1) {
+      const line = lines[index];
+      const separator = line.indexOf(',');
+      if (separator < 0) continue;
+
+      const timestamp = line.slice(0, separator);
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(timestamp)) continue;
+
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) continue;
+      lines[index] = `${this.formatEatTimestamp(date)}${line.slice(separator)}`;
+      normalized = true;
+    }
+
+    if (normalized) {
+      await writeFile(this.auditPath, lines.join(lineEnding), 'utf8');
+      this.logger.log('Normalized verification audit timestamps to EAT (UTC+3)');
+    }
+  }
+
+  private formatEatTimestamp(date: Date): string {
+    const eatDate = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+    const pad = (value: number) => String(value).padStart(2, '0');
+
+    return `${eatDate.getUTCFullYear()}-${pad(eatDate.getUTCMonth() + 1)}-${pad(eatDate.getUTCDate())} ${pad(eatDate.getUTCHours())}:${pad(eatDate.getUTCMinutes())}:${pad(eatDate.getUTCSeconds())}`;
   }
 }

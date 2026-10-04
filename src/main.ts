@@ -2,11 +2,29 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
+import { readFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const tlsCertPath = process.env.TLS_CERT_PATH;
+  const tlsKeyPath = process.env.TLS_KEY_PATH;
+  if (Boolean(tlsCertPath) !== Boolean(tlsKeyPath)) {
+    throw new Error('Set both TLS_CERT_PATH and TLS_KEY_PATH to enable HTTPS.');
+  }
+
+  const protocol = tlsCertPath ? 'https' : 'http';
+  const app = await NestFactory.create(
+    AppModule,
+    tlsCertPath && tlsKeyPath
+      ? {
+          httpsOptions: {
+            cert: readFileSync(tlsCertPath),
+            key: readFileSync(tlsKeyPath),
+          },
+        }
+      : {},
+  );
 
   app.use((request, _response, next) => {
     if (request.path.startsWith('/api/')) {
@@ -45,8 +63,8 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
-  console.log(`Employee verification app is listening on 0.0.0.0:${port}`);
-  console.log(`Local:   http://localhost:${port}/`);
+  console.log(`Employee verification app is listening on ${protocol}://0.0.0.0:${port}`);
+  console.log(`Local:   ${protocol}://localhost:${port}/`);
 
   const addresses = Object.entries(networkInterfaces()).flatMap(([interfaceName, entries]) =>
     (entries ?? [])
@@ -59,7 +77,7 @@ async function bootstrap(): Promise<void> {
   } else {
     console.log('Network addresses (try one reachable from your device):');
     for (const { interfaceName, address } of addresses) {
-      console.log(`  ${interfaceName}: http://${address}:${port}/`);
+      console.log(`  ${interfaceName}: ${protocol}://${address}:${port}/`);
     }
   }
 }

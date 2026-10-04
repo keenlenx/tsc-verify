@@ -4,10 +4,24 @@ require("reflect-metadata");
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const helmet_1 = require("helmet");
+const node_fs_1 = require("node:fs");
 const node_os_1 = require("node:os");
 const app_module_1 = require("./app.module");
 async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const tlsCertPath = process.env.TLS_CERT_PATH;
+    const tlsKeyPath = process.env.TLS_KEY_PATH;
+    if (Boolean(tlsCertPath) !== Boolean(tlsKeyPath)) {
+        throw new Error('Set both TLS_CERT_PATH and TLS_KEY_PATH to enable HTTPS.');
+    }
+    const protocol = tlsCertPath ? 'https' : 'http';
+    const app = await core_1.NestFactory.create(app_module_1.AppModule, tlsCertPath && tlsKeyPath
+        ? {
+            httpsOptions: {
+                cert: (0, node_fs_1.readFileSync)(tlsCertPath),
+                key: (0, node_fs_1.readFileSync)(tlsKeyPath),
+            },
+        }
+        : {});
     app.use((request, _response, next) => {
         if (request.path.startsWith('/api/')) {
             const origin = request.headers.origin || 'same-origin';
@@ -37,8 +51,8 @@ async function bootstrap() {
     }));
     const port = Number(process.env.PORT) || 3000;
     await app.listen(port, '0.0.0.0');
-    console.log(`Employee verification app is listening on 0.0.0.0:${port}`);
-    console.log(`Local:   http://localhost:${port}/`);
+    console.log(`Employee verification app is listening on ${protocol}://0.0.0.0:${port}`);
+    console.log(`Local:   ${protocol}://localhost:${port}/`);
     const addresses = Object.entries((0, node_os_1.networkInterfaces)()).flatMap(([interfaceName, entries]) => (entries ?? [])
         .filter((entry) => !entry.internal && entry.family === 'IPv4')
         .map((entry) => ({ interfaceName, address: entry.address })));
@@ -48,7 +62,7 @@ async function bootstrap() {
     else {
         console.log('Network addresses (try one reachable from your device):');
         for (const { interfaceName, address } of addresses) {
-            console.log(`  ${interfaceName}: http://${address}:${port}/`);
+            console.log(`  ${interfaceName}: ${protocol}://${address}:${port}/`);
         }
     }
 }
