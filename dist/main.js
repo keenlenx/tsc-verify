@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 require("reflect-metadata");
+require("dotenv/config");
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const helmet_1 = require("helmet");
@@ -50,8 +51,9 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
     }));
     const port = Number(process.env.PORT) || 3000;
-    await app.listen(port, '0.0.0.0');
-    console.log(`Employee verification app is listening on ${protocol}://0.0.0.0:${port}`);
+    const host = process.env.HOST || '0.0.0.0';
+    await app.listen(port, host);
+    console.log(`Employee verification app is listening on ${protocol}://${host}:${port}`);
     console.log(`Local:   ${protocol}://localhost:${port}/`);
     const addresses = Object.entries((0, node_os_1.networkInterfaces)()).flatMap(([interfaceName, entries]) => (entries ?? [])
         .filter((entry) => !entry.internal && entry.family === 'IPv4')

@@ -11,17 +11,21 @@ npm install
 npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000/). The server listens on `0.0.0.0` and prints available network URLs. The app includes a PWA manifest, install prompt where supported, and a service worker that caches the app shell and provides an offline page. Employee verification still requires a network connection, and Bootstrap/Tesseract are loaded from jsDelivr.
+Open the local URL printed at startup. The sample `.env.example` uses port `3000`; this machine's `.env` can choose a different port. The server listens on `0.0.0.0` by default and prints available network URLs. The app includes a PWA manifest, install prompt where supported, and a service worker that caches the app shell and provides an offline page. Employee verification still requires a network connection, and Bootstrap/Tesseract are loaded from jsDelivr.
 
-PWA installation and live camera access require a secure context. `localhost` is secure over HTTP; a phone using the PC's LAN IP needs HTTPS with a certificate trusted by the phone and containing the LAN IP in its subject alternative names. Configure certificate and key paths before starting:
 
-```powershell
-$env:TLS_CERT_PATH = "C:\certs\employee-verification.crt"
-$env:TLS_KEY_PATH = "C:\certs\employee-verification.key"
-npm run start
+The app loads settings from `.env` at startup. Copy `.env.example` to `.env` and adjust the values for this machine. `HOST` defaults to `0.0.0.0`; `PORT` defaults to `3000`.
+
+PWA installation and live camera access from a phone require HTTPS with a certificate trusted by the phone and containing the PC's LAN IP in its subject alternative names. Set certificate paths in `.env`:
+
+```dotenv
+HOST=0.0.0.0
+PORT=3000
+TLS_CERT_PATH=C:/certs/employee-verification.crt
+TLS_KEY_PATH=C:/certs/employee-verification.key
 ```
 
-Trust the issuing CA on the phone, then open the printed HTTPS LAN URL and install from the browser prompt/menu. Plain HTTP on a LAN IP does not allow service-worker registration, PWA installation, or live camera access; use the image picker there.
+Leave both TLS values empty for HTTP. Trust the issuing CA on the phone, then restart the app, open the printed HTTPS LAN URL, and install from the browser prompt/menu. Plain HTTP on a LAN IP does not allow service-worker registration, PWA installation, or live camera access; use the image picker there.
 
 ## Data and audit log
 

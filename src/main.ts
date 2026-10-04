@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
@@ -62,8 +63,9 @@ async function bootstrap(): Promise<void> {
   );
 
   const port = Number(process.env.PORT) || 3000;
-  await app.listen(port, '0.0.0.0');
-  console.log(`Employee verification app is listening on ${protocol}://0.0.0.0:${port}`);
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(port, host);
+  console.log(`Employee verification app is listening on ${protocol}://${host}:${port}`);
   console.log(`Local:   ${protocol}://localhost:${port}/`);
 
   const addresses = Object.entries(networkInterfaces()).flatMap(([interfaceName, entries]) =>
