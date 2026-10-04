@@ -9,21 +9,23 @@ import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import csv = require('csv-parser');
 
-export interface Employee {
-  employeeId: string;
+export interface Teacher {
+  sno: string;
+  tscNo: string;
   idNumber: string;
-  fullName: string;
-  designation: string;
-  department: string;
+  name: string;
   station: string;
-  status: string;
+  mobileNo: string;
+  category: string;
+  county: string;
+  region: string;
 }
 
 @Injectable()
 export class EmployeeService implements OnModuleInit {
   private readonly logger = new Logger(EmployeeService.name);
-  private employees = new Map<string, Employee>();
-  private readonly csvPath = join(process.cwd(), 'data', 'employees.csv');
+  private teachers = new Map<string, Teacher>();
+  private readonly csvPath = join(process.cwd(), 'data', 'teachersday.csv');
   private readonly auditPath = join(process.cwd(), 'logs', 'verifications.csv');
   private csvSignature = '';
 
@@ -32,10 +34,10 @@ export class EmployeeService implements OnModuleInit {
     await this.prepareAuditLog();
   }
 
-  async verify(idNumber: string): Promise<{ verified: true; employee: Employee } | { verified: false }> {
-    await this.refreshEmployeesIfChanged();
-    const employee = this.employees.get(idNumber);
-    const result = employee ? 'VERIFIED' : 'NOT VERIFIED';
+  async verify(idNumber: string): Promise<{ verified: true; teacher: Teacher } | { verified: false }> {
+    await this.refreshTeachersIfChanged();
+    const teacher = this.teachers.get(idNumber);
+    const result = teacher ? 'VERIFIED' : 'NOT VERIFIED';
     this.logger.log(`Verification ${result} for ID ending ${idNumber.slice(-2)}`);
 
     try {
@@ -48,7 +50,7 @@ export class EmployeeService implements OnModuleInit {
       this.logger.error('Unable to write verification audit entry', error);
     }
 
-    return employee ? { verified: true, employee } : { verified: false };
+    return teacher ? { verified: true, teacher } : { verified: false };
   }
 
   private async loadEmployees(): Promise<void> {
@@ -56,24 +58,26 @@ export class EmployeeService implements OnModuleInit {
       this.logger.error(`Unable to read employee CSV at ${this.csvPath}`, error.stack);
       throw new InternalServerErrorException('Employee records could not be loaded');
     });
-    const updatedEmployees = new Map<string, Employee>();
+    const updatedTeachers = new Map<string, Teacher>();
 
     await new Promise<void>((resolve, reject) => {
       createReadStream(this.csvPath)
-        .pipe(csv())
+        .pipe(csv({ mapHeaders: ({ header }) => header.trim().toLowerCase().replace(/[.\s]+/g, '') }))
         .on('data', (row: Record<string, string>) => {
-          const employee: Employee = {
-            employeeId: row.employeeId?.trim(),
-            idNumber: row.idNumber?.trim(),
-            fullName: row.fullName?.trim(),
-            designation: row.designation?.trim(),
-            department: row.department?.trim(),
+          const teacher: Teacher = {
+            sno: row.sno?.trim(),
+            tscNo: row.tscno?.trim(),
+            idNumber: row.idnum?.trim(),
+            name: row.name?.trim(),
             station: row.station?.trim(),
-            status: row.status?.trim(),
+            mobileNo: row.mobileno?.trim(),
+            category: row.category?.trim(),
+            county: row.county?.trim(),
+            region: row.region?.trim(),
           };
 
-          if (employee.idNumber) {
-            updatedEmployees.set(employee.idNumber, employee);
+          if (teacher.idNumber && teacher.idNumber !== '0') {
+            updatedTeachers.set(teacher.idNumber, teacher);
           }
         })
         .on('end', resolve)
@@ -83,12 +87,12 @@ export class EmployeeService implements OnModuleInit {
       throw new InternalServerErrorException('Employee records could not be loaded');
     });
 
-    this.employees = updatedEmployees;
+    this.teachers = updatedTeachers;
     this.csvSignature = `${fileStat.mtimeMs}:${fileStat.ctimeMs}:${fileStat.size}:${fileStat.ino}`;
-    this.logger.log(`Loaded ${this.employees.size} employee records`);
+    this.logger.log(`Loaded ${this.teachers.size} teacher records from teachersday.csv`);
   }
 
-  private async refreshEmployeesIfChanged(): Promise<void> {
+  private async refreshTeachersIfChanged(): Promise<void> {
     const fileStat = await stat(this.csvPath).catch((error: Error) => {
       this.logger.error(`Unable to check employee CSV at ${this.csvPath}`, error.stack);
       throw new InternalServerErrorException('Employee records could not be checked');

@@ -1,28 +1,30 @@
 import { OnModuleInit } from '@nestjs/common';
-export interface Employee {
-    employeeId: string;
+export interface Teacher {
+    sno: string;
+    tscNo: string;
     idNumber: string;
-    fullName: string;
-    designation: string;
-    department: string;
+    name: string;
     station: string;
-    status: string;
+    mobileNo: string;
+    category: string;
+    county: string;
+    region: string;
 }
 export declare class EmployeeService implements OnModuleInit {
     private readonly logger;
-    private employees;
+    private teachers;
     private readonly csvPath;
     private readonly auditPath;
     private csvSignature;
     onModuleInit(): Promise<void>;
     verify(idNumber: string): Promise<{
         verified: true;
-        employee: Employee;
+        teacher: Teacher;
     } | {
         verified: false;
     }>;
     private loadEmployees;
-    private refreshEmployeesIfChanged;
+    private refreshTeachersIfChanged;
     private prepareAuditLog;
     private formatEatTimestamp;
 }

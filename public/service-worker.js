@@ -1,4 +1,4 @@
-const CACHE_NAME = 'employee-verification-shell-v1';
+const CACHE_NAME = 'teacher-verification-shell-v2';
 const APP_SHELL = [
   '/',
   '/index.html',

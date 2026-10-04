@@ -16,8 +16,8 @@ const csv = require("csv-parser");
 let EmployeeService = EmployeeService_1 = class EmployeeService {
     constructor() {
         this.logger = new common_1.Logger(EmployeeService_1.name);
-        this.employees = new Map();
-        this.csvPath = (0, node_path_1.join)(process.cwd(), 'data', 'employees.csv');
+        this.teachers = new Map();
+        this.csvPath = (0, node_path_1.join)(process.cwd(), 'data', 'teachersday.csv');
         this.auditPath = (0, node_path_1.join)(process.cwd(), 'logs', 'verifications.csv');
         this.csvSignature = '';
     }
@@ -26,9 +26,9 @@ let EmployeeService = EmployeeService_1 = class EmployeeService {
         await this.prepareAuditLog();
     }
     async verify(idNumber) {
-        await this.refreshEmployeesIfChanged();
-        const employee = this.employees.get(idNumber);
-        const result = employee ? 'VERIFIED' : 'NOT VERIFIED';
+        await this.refreshTeachersIfChanged();
+        const teacher = this.teachers.get(idNumber);
+        const result = teacher ? 'VERIFIED' : 'NOT VERIFIED';
         this.logger.log(`Verification ${result} for ID ending ${idNumber.slice(-2)}`);
         try {
             await (0, promises_1.appendFile)(this.auditPath, `${this.formatEatTimestamp(new Date())},${idNumber},${result}\n`, 'utf8');
@@ -36,29 +36,31 @@ let EmployeeService = EmployeeService_1 = class EmployeeService {
         catch (error) {
             this.logger.error('Unable to write verification audit entry', error);
         }
-        return employee ? { verified: true, employee } : { verified: false };
+        return teacher ? { verified: true, teacher } : { verified: false };
     }
     async loadEmployees() {
         const fileStat = await (0, promises_1.stat)(this.csvPath).catch((error) => {
             this.logger.error(`Unable to read employee CSV at ${this.csvPath}`, error.stack);
             throw new common_1.InternalServerErrorException('Employee records could not be loaded');
         });
-        const updatedEmployees = new Map();
+        const updatedTeachers = new Map();
         await new Promise((resolve, reject) => {
             (0, node_fs_1.createReadStream)(this.csvPath)
-                .pipe(csv())
+                .pipe(csv({ mapHeaders: ({ header }) => header.trim().toLowerCase().replace(/[.\s]+/g, '') }))
                 .on('data', (row) => {
-                const employee = {
-                    employeeId: row.employeeId?.trim(),
-                    idNumber: row.idNumber?.trim(),
-                    fullName: row.fullName?.trim(),
-                    designation: row.designation?.trim(),
-                    department: row.department?.trim(),
+                const teacher = {
+                    sno: row.sno?.trim(),
+                    tscNo: row.tscno?.trim(),
+                    idNumber: row.idnum?.trim(),
+                    name: row.name?.trim(),
                     station: row.station?.trim(),
-                    status: row.status?.trim(),
+                    mobileNo: row.mobileno?.trim(),
+                    category: row.category?.trim(),
+                    county: row.county?.trim(),
+                    region: row.region?.trim(),
                 };
-                if (employee.idNumber) {
-                    updatedEmployees.set(employee.idNumber, employee);
+                if (teacher.idNumber && teacher.idNumber !== '0') {
+                    updatedTeachers.set(teacher.idNumber, teacher);
                 }
             })
                 .on('end', resolve)
@@ -67,11 +69,11 @@ let EmployeeService = EmployeeService_1 = class EmployeeService {
             this.logger.error(`Unable to load employee CSV at ${this.csvPath}`, error.stack);
             throw new common_1.InternalServerErrorException('Employee records could not be loaded');
         });
-        this.employees = updatedEmployees;
+        this.teachers = updatedTeachers;
         this.csvSignature = `${fileStat.mtimeMs}:${fileStat.ctimeMs}:${fileStat.size}:${fileStat.ino}`;
-        this.logger.log(`Loaded ${this.employees.size} employee records`);
+        this.logger.log(`Loaded ${this.teachers.size} teacher records from teachersday.csv`);
     }
-    async refreshEmployeesIfChanged() {
+    async refreshTeachersIfChanged() {
         const fileStat = await (0, promises_1.stat)(this.csvPath).catch((error) => {
             this.logger.error(`Unable to check employee CSV at ${this.csvPath}`, error.stack);
             throw new common_1.InternalServerErrorException('Employee records could not be checked');

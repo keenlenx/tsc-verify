@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Employee Verification",
-  "short_name": "Verify Staff",
-  "description": "Verify employee identity against current staff records.",
+  "name": "Teacher Verification",
+  "short_name": "Verify Teacher",
+  "description": "Verify teacher identity against current TSC records.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

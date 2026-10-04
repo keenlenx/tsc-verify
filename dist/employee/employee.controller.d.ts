@@ -8,7 +8,7 @@ export declare class EmployeeController {
     };
     verify(body: VerifyDto): Promise<{
         verified: true;
-        employee: import("./employee.service").Employee;
+        teacher: import("./employee.service").Teacher;
     } | {
         verified: false;
     }>;

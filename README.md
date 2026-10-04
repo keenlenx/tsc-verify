@@ -1,6 +1,6 @@
 # Employee Verification
 
-A single NestJS application serves the browser interface at `/` and verifies Kenyan National ID numbers against a CSV file. OCR runs locally in the browser with Tesseract.js; the server receives only the entered ID number.
+A single NestJS application serves the browser interface at `/` and verifies teacher records in `data/teachersday.csv` by Kenyan National ID (`Idnum`). OCR runs locally in the browser with Tesseract.js; the server receives only the entered ID number.
 
 ## Run
 
@@ -32,7 +32,7 @@ Leave both TLS values empty for HTTP. Trust the issuing CA on the phone, then re
 - Employee records: `data/employees.csv`
 - Verification audit: `logs/verifications.csv` (created automatically)
 
-The employee CSV is loaded into memory during startup and checked for file changes on each verification request. Add, edit, or remove rows in `data/employees.csv`; the next verification uses the updated records without restarting the app or reloading the browser page. Keep the same header columns. Audit entries contain a timestamp in East Africa Time (EAT, UTC+3) formatted as `YYYY-MM-DD HH:mm:ss` in 24-hour time, the submitted ID number, and a `VERIFIED` or `NOT VERIFIED` outcome.
+Teacher records are loaded from `data/teachersday.csv` and the file is checked for changes on each verification request. Add, edit, or remove teacher rows; the next verification uses the updated records without restarting the app or reloading the browser page. The `Idnum` column is the lookup key; `0` values are treated as missing IDs. Verified responses include `Sno`, `Tsc No`, `Idnum`, `Name`, `Station`, `Mobile no.`, `Category`, `County`, and `Region`. Audit entries contain a timestamp in East Africa Time (EAT, UTC+3) formatted as `YYYY-MM-DD HH:mm:ss` in 24-hour time, the submitted ID number, and a `VERIFIED` or `NOT VERIFIED` outcome.
 
 ## API
 
@@ -44,4 +44,4 @@ The employee CSV is loaded into memory during startup and checked for file chang
 }
 ```
 
-Known ID numbers return `{ "verified": true, "employee": { ... } }`; unknown numbers return `{ "verified": false }`. Invalid request bodies receive a validation error.
+Known ID numbers return `{ "verified": true, "teacher": { ... } }`; unknown numbers return `{ "verified": false }`. Invalid request bodies receive a validation error.
