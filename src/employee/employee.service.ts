@@ -1,0 +1,116 @@
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
+import { createReadStream } from 'node:fs';
+import { appendFile, mkdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import csv = require('csv-parser');
+
+export interface Employee {
+  employeeId: string;
+  idNumber: string;
+  fullName: string;
+  designation: string;
+  department: string;
+  station: string;
+  status: string;
+}
+
+@Injectable()
+export class EmployeeService implements OnModuleInit {
+  private readonly logger = new Logger(EmployeeService.name);
+  private employees = new Map<string, Employee>();
+  private readonly csvPath = join(process.cwd(), 'data', 'employees.csv');
+  private readonly auditPath = join(process.cwd(), 'logs', 'verifications.csv');
+  private csvSignature = '';
+
+  async onModuleInit(): Promise<void> {
+    await this.loadEmployees();
+    await this.prepareAuditLog();
+  }
+
+  async verify(idNumber: string): Promise<{ verified: true; employee: Employee } | { verified: false }> {
+    await this.refreshEmployeesIfChanged();
+    const employee = this.employees.get(idNumber);
+    const result = employee ? 'VERIFIED' : 'NOT VERIFIED';
+    this.logger.log(`Verification ${result} for ID ending ${idNumber.slice(-2)}`);
+
+    try {
+      await appendFile(
+        this.auditPath,
+        `${new Date().toISOString()},${idNumber},${result}\n`,
+        'utf8',
+      );
+    } catch (error) {
+      this.logger.error('Unable to write verification audit entry', error);
+    }
+
+    return employee ? { verified: true, employee } : { verified: false };
+  }
+
+  private async loadEmployees(): Promise<void> {
+    const fileStat = await stat(this.csvPath).catch((error: Error) => {
+      this.logger.error(`Unable to read employee CSV at ${this.csvPath}`, error.stack);
+      throw new InternalServerErrorException('Employee records could not be loaded');
+    });
+    const updatedEmployees = new Map<string, Employee>();
+
+    await new Promise<void>((resolve, reject) => {
+      createReadStream(this.csvPath)
+        .pipe(csv())
+        .on('data', (row: Record<string, string>) => {
+          const employee: Employee = {
+            employeeId: row.employeeId?.trim(),
+            idNumber: row.idNumber?.trim(),
+            fullName: row.fullName?.trim(),
+            designation: row.designation?.trim(),
+            department: row.department?.trim(),
+            station: row.station?.trim(),
+            status: row.status?.trim(),
+          };
+
+          if (employee.idNumber) {
+            updatedEmployees.set(employee.idNumber, employee);
+          }
+        })
+        .on('end', resolve)
+        .on('error', reject);
+    }).catch((error: Error) => {
+      this.logger.error(`Unable to load employee CSV at ${this.csvPath}`, error.stack);
+      throw new InternalServerErrorException('Employee records could not be loaded');
+    });
+
+    this.employees = updatedEmployees;
+    this.csvSignature = `${fileStat.mtimeMs}:${fileStat.ctimeMs}:${fileStat.size}:${fileStat.ino}`;
+    this.logger.log(`Loaded ${this.employees.size} employee records`);
+  }
+
+  private async refreshEmployeesIfChanged(): Promise<void> {
+    const fileStat = await stat(this.csvPath).catch((error: Error) => {
+      this.logger.error(`Unable to check employee CSV at ${this.csvPath}`, error.stack);
+      throw new InternalServerErrorException('Employee records could not be checked');
+    });
+    const signature = `${fileStat.mtimeMs}:${fileStat.ctimeMs}:${fileStat.size}:${fileStat.ino}`;
+
+    if (signature !== this.csvSignature) {
+      await this.loadEmployees();
+    }
+  }
+
+  private async prepareAuditLog(): Promise<void> {
+    await mkdir(join(process.cwd(), 'logs'), { recursive: true });
+    try {
+      await appendFile(this.auditPath, 'timestamp,idNumber,result\n', {
+        encoding: 'utf8',
+        flag: 'wx',
+      });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+        throw error;
+      }
+    }
+  }
+}

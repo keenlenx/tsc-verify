@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f5f1">
+  <title>Employee Verification</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202724;
+      --muted: #69736e;
+      --line: #dfe5df;
+      --green: #23664d;
+      --green-deep: #194d39;
+      --green-soft: #e7f1eb;
+      --orange: #d56e42;
+      --paper: #ffffff;
+      --canvas: #f2f5f1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(160deg, #edf3ee 0, var(--canvas) 340px, #f8f9f6 100%);
+      font-family: "Segoe UI", sans-serif;
+    }
+    .topline { height: 4px; background: linear-gradient(90deg, var(--green) 0 72%, var(--orange) 72%); }
+    .app-shell { width: 100%; max-width: 900px; margin: 0 auto; padding: 1.15rem 1rem 2rem; }
+    .app-header { min-height: 54px; margin-bottom: 1rem; }
+    .brand-mark { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; color: #fff; background: var(--green); border-radius: 8px; font-weight: 800; }
+    .eyebrow { color: var(--green); font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    h1, h2, p { letter-spacing: 0; }
+    h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; font-weight: 750; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 25px rgb(33 53 42 / 5%); }
+    .capture-panel { padding: 1rem; }
+    .capture-heading { margin-bottom: .85rem; }
+    .panel-title { font-size: 1rem; font-weight: 750; }
+    .scan-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .75rem; }
+    .scan-action { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .65rem .5rem; font-size: .9rem; font-weight: 700; white-space: nowrap; }
+    .camera-frame { position: relative; display: grid; width: 100%; aspect-ratio: 4 / 3; min-height: 210px; max-height: 440px; place-items: center; overflow: hidden; background: #202825; border-radius: 6px; }
+    .camera-frame video, .camera-frame img { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; object-fit: contain; }
+    .camera-placeholder { max-width: 280px; padding: 1.25rem; color: #d3ddd6; text-align: center; font-size: .88rem; }
+    .camera-placeholder svg { display: block; margin: 0 auto 12px; color: #91ad9b; }
+    .btn-success { --bs-btn-bg: var(--green); --bs-btn-border-color: var(--green); --bs-btn-hover-bg: var(--green-deep); --bs-btn-hover-border-color: var(--green-deep); }
+    .btn-outline-success { --bs-btn-color: var(--green); --bs-btn-border-color: #a8c4b3; --bs-btn-hover-bg: var(--green); --bs-btn-hover-border-color: var(--green); }
+    .form-control:focus { border-color: #78a68d; box-shadow: 0 0 0 .2rem rgb(35 102 77 / 12%); }
+    .camera-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin: .7rem 0 1rem; }
+    .camera-actions .btn { min-height: 46px; }
+    .id-form { display: grid; gap: .7rem; }
+    .id-form .form-label { margin-bottom: .35rem; font-size: .88rem; }
+    .id-form .form-control { min-height: 52px; font-size: 1.05rem; }
+    .id-form .btn { min-height: 50px; font-weight: 700; }
+    .scan-feedback { min-height: 1.35rem; font-size: .84rem; }
+    .connection-status { margin-top: .35rem; padding: .65rem .75rem; border-radius: 6px; background: #edf1ee; color: var(--muted); font-size: .76rem; overflow-wrap: anywhere; }
+    .connection-status.online { background: var(--green-soft); color: var(--green-deep); }
+    .connection-status.offline { background: #fbefed; color: #9d352d; }
+    .progress { height: 5px; }
+    .result-panel { margin-top: .8rem; padding: 1rem; border-left: 4px solid var(--green); background: var(--green-soft); }
+    .result-panel.not-found { border-left-color: #b7453b; background: #fbefed; }
+    .result-status { font-size: 1.05rem; font-weight: 800; }
+    .result-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+    .result-item { min-width: 0; padding-bottom: .6rem; border-bottom: 1px solid rgb(35 102 77 / 13%); }
+    .result-item:last-child { padding-bottom: 0; border-bottom: 0; }
+    .result-item small { display: block; margin-bottom: .12rem; color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+    .result-item span { overflow-wrap: anywhere; font-size: .94rem; font-weight: 600; }
+    .troubleshooting { margin-top: .8rem; }
+    .troubleshooting summary { min-height: 36px; display: flex; align-items: center; color: var(--muted); font-size: .8rem; }
+    #ocrText { max-height: 140px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (min-width: 700px) {
+      .app-shell { padding: 2rem 1.5rem 3rem; }
+      .app-header { margin-bottom: 1.35rem; }
+      h1 { font-size: 1.75rem; }
+      .capture-panel { padding: 1.5rem; }
+      .capture-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: 1.25rem; align-items: start; }
+      .capture-heading { grid-column: 1 / -1; margin-bottom: 0; }
+      .scan-actions { margin-bottom: .85rem; }
+      .camera-frame { min-height: 290px; }
+      .scan-details { display: flex; flex-direction: column; min-height: 100%; }
+      .camera-actions { margin-bottom: 1rem; }
+      .id-form { margin-top: auto; }
+      .result-panel { padding: 1.35rem 1.5rem; }
+      .result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.5rem; }
+      .result-item:nth-last-child(-n + 2) { border-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topline"></div>
+  <main class="app-shell">
+    <header class="app-header d-flex align-items-center gap-3">
+      <div class="brand-mark" aria-hidden="true">EV</div>
+      <div>
+        <div class="eyebrow">Staff services</div>
+        <h1>Employee Verification</h1>
+      </div>
+    </header>
+
+    <section class="panel capture-panel mb-3" aria-labelledby="captureTitle">
+      <div class="capture-layout">
+        <div class="capture-heading">
+          <div class="eyebrow mb-1">Identity check</div>
+          <h2 class="panel-title mb-0" id="captureTitle">National ID</h2>
+        </div>
+        <div class="scan-media">
+          <div class="scan-actions">
+          <button class="btn btn-outline-success scan-action" id="cameraButton" type="button" title="Start camera">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="9" height="9" rx="1.5" stroke="currentColor"/><path d="m10.5 6 4-2v8l-4-2" stroke="currentColor" stroke-linejoin="round"/></svg>
+            Camera
+          </button>
+          <label class="btn btn-outline-secondary scan-action mb-0" for="imageInput" title="Choose an ID image">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 10.5v-8m0 0L5 5.5m3-3 3 3M2.5 9.5v3A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Upload image
+          </label>
+          <input class="visually-hidden" id="imageInput" type="file" accept="image/*" capture="environment">
+          </div>
+
+          <div class="camera-frame mb-3" id="mediaFrame">
+            <div class="camera-placeholder" id="placeholder">
+              <svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="13" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="m16 10 5-3v10l-5-3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span id="mediaMessage">Camera preview or selected image appears here</span>
+            </div>
+            <video id="cameraVideo" autoplay playsinline hidden></video>
+            <img id="imagePreview" alt="Selected identity document" hidden>
+          </div>
+          <div class="camera-actions" id="cameraActions" hidden>
+            <button class="btn btn-success" id="captureButton" type="button">Capture frame</button>
+            <button class="btn btn-outline-secondary" id="stopCameraButton" type="button">Stop camera</button>
+          </div>
+        </div>
+
+        <div class="scan-details">
+          <div class="id-form">
+            <div>
+              <label for="idNumber" class="form-label fw-semibold">Detected ID Number</label>
+              <input class="form-control" id="idNumber" type="text" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Enter 7 or 8 digits">
+            </div>
+            <button class="btn btn-success" id="verifyButton" type="button">Verify employee</button>
+          </div>
+          <div class="progress mt-3" id="ocrProgress" role="progressbar" aria-label="OCR progress" aria-valuemin="0" aria-valuemax="100" hidden>
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+          </div>
+          <div class="scan-feedback text-secondary mt-2" id="feedback" role="status" aria-live="polite"></div>
+          <div class="connection-status" id="connectionStatus" role="status" aria-live="polite">Checking verification server...</div>
+          <details class="troubleshooting">
+            <summary>OCR text</summary>
+            <pre class="small bg-light border rounded p-2 mt-2 mb-0" id="ocrText">No image processed.</pre>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="panel p-3 p-md-4" aria-live="polite" hidden></section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const cameraActions = document.getElementById('cameraActions');
+    const placeholder = document.getElementById('placeholder');
+    const feedback = document.getElementById('feedback');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const idNumberInput = document.getElementById('idNumber');
+    const resultPanel = document.getElementById('result');
+    const progress = document.getElementById('ocrProgress');
+    const progressBar = document.getElementById('progressBar');
+    let cameraStream;
+    let ocrWorkerPromise;
+    let ocrInProgress = false;
+
+    function getOcrWorker() {
+      if (!ocrWorkerPromise) {
+        ocrWorkerPromise = Tesseract.createWorker('eng', 1, {
+          logger: (message) => {
+            if (ocrInProgress && message.status === 'recognizing text' && message.progress != null) {
+              progressBar.style.width = `${Math.round(message.progress * 100)}%`;
+            }
+          }
+        }).then(async (worker) => {
+          await worker.setParameters({ tessedit_pageseg_mode: '11' });
+          return worker;
+        }).catch((error) => {
+          ocrWorkerPromise = undefined;
+          throw error;
+        });
+      }
+      return ocrWorkerPromise;
+    }
+
+    async function prepareImage(image) {
+      const bitmap = await createImageBitmap(image);
+      const maxSide = 1800;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1) {
+        bitmap.close();
+        return image;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Could not resize the image.')), 'image/jpeg', 0.9);
+      });
+    }
+
+    getOcrWorker().then(() => {
+      feedback.textContent = 'ID reader ready.';
+    }).catch((error) => {
+      console.error('Unable to prepare the OCR reader', error);
+    });
+
+    async function checkServerConnection() {
+      const endpoint = new URL('/api/health', window.location.href).toString();
+      connectionStatus.className = 'connection-status';
+      connectionStatus.textContent = `Checking ${endpoint}`;
+      try {
+        const response = await fetch(endpoint, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const health = await response.json();
+        if (!health.ok) throw new Error('Unexpected health response');
+        connectionStatus.className = 'connection-status online';
+        connectionStatus.textContent = `Connected to verification server at ${window.location.host}`;
+        console.info('[connection] verification server reachable', { endpoint });
+      } catch (error) {
+        connectionStatus.className = 'connection-status offline';
+        connectionStatus.textContent = `Cannot reach ${endpoint}. Open the app using the computer's LAN address and ensure the phone can reach it.`;
+        console.error('[connection] verification server unreachable', { endpoint, error });
+      }
+    }
+
+    void checkServerConnection();
+
+    function setImage(file) {
+      imagePreview.src = URL.createObjectURL(file);
+      imagePreview.hidden = false;
+      cameraVideo.hidden = true;
+      placeholder.hidden = true;
+      runOcr(file);
+    }
+
+    function extractIdNumber(text) {
+      const labeledPatterns = [
+        /\b(?:IDENTITY\s+CARD|IDENTIFICATION\s+CARD)\s*(?:NO\.?|NUMBER)\s*[:#-]?\s*(\d{7,8})\b/i,
+        /\bNATIONAL\s+ID\s*(?:NO\.?|NUMBER)\s*[:#-]?\s*(\d{7,8})\b/i,
+        /\bID\.?\s*(?:NO\.?|NUMBER)\s*[:#-]?\s*(\d{7,8})\b/i
+      ];
+      for (const pattern of labeledPatterns) {
+        const match = text.match(pattern);
+        if (match) return match[1];
+      }
+
+      const candidates = [...text.matchAll(/\b\d{7,8}\b/g)].filter((match) => {
+        const before = text.slice(0, match.index);
+        const after = text.slice(match.index + match[0].length);
+        const previousLine = before.slice(Math.max(before.lastIndexOf('\n'), before.lastIndexOf('\r')) + 1);
+        const currentLine = `${previousLine}${after.split(/[\r\n]/, 1)[0]}`;
+        return !/\b(?:serial|s\/n|sr\.?\s*no)\b/i.test(currentLine);
+      });
+      const uniqueCandidates = [...new Set(candidates.map((match) => match[0]))];
+      return uniqueCandidates.length === 1 ? uniqueCandidates[0] : null;
+    }
+
+    async function runOcr(image) {
+      feedback.textContent = 'Reading ID image...';
+      progress.hidden = false;
+      progressBar.style.width = '0%';
+      ocrInProgress = true;
+      try {
+        const [worker, preparedImage] = await Promise.all([getOcrWorker(), prepareImage(image)]);
+        const { data } = await worker.recognize(preparedImage);
+        const text = data.text || '';
+        document.getElementById('ocrText').textContent = text || 'No text detected.';
+        const detectedId = extractIdNumber(text);
+        console.info('[ocr] scan finished', {
+          detected: Boolean(detectedId),
+          idSuffix: detectedId ? detectedId.slice(-2) : undefined
+        });
+        if (detectedId) {
+          idNumberInput.value = detectedId;
+          feedback.textContent = `ID number ${detectedId} detected. Verifying...`;
+          await verifyEmployee(detectedId);
+        } else {
+          feedback.textContent = 'Could not identify one clear ID number. Enter it manually.';
+        }
+      } catch (error) {
+        feedback.textContent = `OCR could not process this image: ${error.message}`;
+      } finally {
+        ocrInProgress = false;
+        progress.hidden = true;
+      }
+    }
+
+    imageInput.addEventListener('change', () => {
+      const file = imageInput.files && imageInput.files[0];
+      if (file) setImage(file);
+    });
+
+    function openNativeCameraPicker(message) {
+      feedback.textContent = message;
+      imageInput.value = '';
+      imageInput.click();
+    }
+
+    document.getElementById('cameraButton').addEventListener('click', async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        openNativeCameraPicker('Live camera preview needs HTTPS. Opening your phone camera or photo picker...');
+        return;
+      }
+      try {
+        stopCamera();
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        cameraVideo.srcObject = cameraStream;
+        cameraVideo.hidden = false;
+        imagePreview.hidden = true;
+        placeholder.hidden = true;
+        cameraActions.hidden = false;
+        feedback.textContent = 'Camera ready.';
+      } catch (error) {
+        openNativeCameraPicker(`Live camera unavailable (${error.message}). Choose or take an ID photo to continue.`);
+      }
+    });
+
+    function stopCamera() {
+      if (cameraStream) cameraStream.getTracks().forEach((track) => track.stop());
+      cameraStream = undefined;
+      cameraVideo.srcObject = null;
+      cameraActions.hidden = true;
+    }
+
+    document.getElementById('stopCameraButton').addEventListener('click', () => {
+      stopCamera();
+      cameraVideo.hidden = true;
+      placeholder.hidden = false;
+      feedback.textContent = 'Camera stopped.';
+    });
+
+    document.getElementById('captureButton').addEventListener('click', () => {
+      if (!cameraVideo.videoWidth) {
+        feedback.textContent = 'Wait for the camera preview, then capture again.';
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = cameraVideo.videoWidth;
+      canvas.height = cameraVideo.videoHeight;
+      canvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          stopCamera();
+          setImage(blob);
+        }
+      }, 'image/jpeg', 0.92);
+    });
+
+    async function verifyEmployee(idNumber = idNumberInput.value.trim()) {
+      idNumberInput.value = idNumber;
+      resultPanel.hidden = true;
+      if (!/^\d{7,8}$/.test(idNumber)) {
+        feedback.textContent = 'Enter a valid 7- or 8-digit ID number.';
+        return;
+      }
+      const button = document.getElementById('verifyButton');
+      button.disabled = true;
+      button.textContent = 'Checking...';
+      feedback.textContent = 'Sending verification request...';
+      const endpoint = new URL('/api/verify', window.location.href).toString();
+      connectionStatus.className = 'connection-status';
+      connectionStatus.textContent = `POST ${endpoint}`;
+      console.info('[verification] sending request', {
+        endpoint,
+        pageOrigin: window.location.origin,
+        idSuffix: idNumber.slice(-2),
+        browserOnline: navigator.onLine
+      });
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idNumber })
+        });
+        const payload = await response.json();
+        console.info('[verification] response received', {
+          status: response.status,
+          verified: Boolean(payload.verified)
+        });
+        connectionStatus.className = 'connection-status online';
+        connectionStatus.textContent = `Server responded with HTTP ${response.status}`;
+        if (!response.ok) {
+          console.error('[verification] server rejected request', {
+            status: response.status,
+            message: payload.message || 'Verification request failed.'
+          });
+          throw new Error(payload.message || 'Verification request failed.');
+        }
+        renderResult(payload);
+      } catch (error) {
+        console.error('[verification] request failed', {
+          endpoint,
+          pageOrigin: window.location.origin,
+          browserOnline: navigator.onLine,
+          secureContext: window.isSecureContext,
+          error
+        });
+        connectionStatus.className = 'connection-status offline';
+        connectionStatus.textContent = `No response from ${endpoint}: ${error.message || 'network request failed'}. Check the server terminal for an incoming POST.`;
+        feedback.textContent = 'Verification could not reach the server. Connection details are shown below.';
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Verify employee';
+      }
+    }
+
+    document.getElementById('verifyButton').addEventListener('click', () => verifyEmployee());
+
+    function renderResult(payload) {
+      resultPanel.replaceChildren();
+      resultPanel.hidden = false;
+      resultPanel.className = `panel p-3 p-md-4 result-panel${payload.verified ? '' : ' not-found'}`;
+      const heading = document.createElement('div');
+      heading.className = 'result-status mb-3';
+      heading.textContent = payload.verified ? 'VERIFIED' : 'EMPLOYEE NOT FOUND';
+      resultPanel.append(heading);
+      if (!payload.verified) return;
+
+      const fields = [
+        ['Employee Number', 'employeeId'], ['Name', 'fullName'],
+        ['Designation', 'designation'], ['Department', 'department'],
+        ['Station', 'station'], ['Status', 'status']
+      ];
+      const grid = document.createElement('div');
+      grid.className = 'result-grid';
+      for (const [label, key] of fields) {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        const caption = document.createElement('small');
+        caption.textContent = label;
+        const value = document.createElement('span');
+        value.textContent = payload.employee[key];
+        item.append(caption, value);
+        grid.append(item);
+      }
+      resultPanel.append(grid);
+    }
+
+    window.addEventListener('beforeunload', stopCamera);
+  </script>
+</body>
+</html>

@@ -11,7 +11,7 @@ npm install
 npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000/). The server listens on `0.0.0.0`, so it is also reachable from other devices on the host's network at `http://<host-ip>:3000/`. Camera access requires a secure context: use `localhost` or HTTPS and grant browser permission. Image upload works as a fallback. Bootstrap 5 and Tesseract.js are loaded from jsDelivr, so those browser features require an internet connection. After OCR recognizes one ID number, verification runs automatically; the button remains available for manual checks.
+Open [http://localhost:3000](http://localhost:3000/). The server listens on `0.0.0.0`, so it is also reachable from other devices on the host's network at `http://<host-ip>:3000/`. Live camera preview requires HTTPS (or localhost); on mobile over plain HTTP, the Camera button opens the device's native camera/photo picker instead. Bootstrap 5 and Tesseract.js are loaded from jsDelivr, so those browser features require an internet connection. After OCR recognizes one ID number, verification runs automatically; the button remains available for manual checks.
 
 ## Data and audit log
 

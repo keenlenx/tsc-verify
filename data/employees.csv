@@ -1,0 +1,4 @@
+employeeId,idNumber,fullName,designation,department,station,status, other
+900486,30491626,Brian Ndiwa,Principal ICT Officer,ICT,Kapsokwony,ACTIVE,well
+EMP002,29708460,John Doe,ICT Officer,ICT,Bungoma,ACTIVE
+EMP003,34567890,Jane Wanjiku,HR Officer,HR,Nairobi,ACTIVE
